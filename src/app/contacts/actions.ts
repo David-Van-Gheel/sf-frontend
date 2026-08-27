@@ -26,6 +26,21 @@ function invalidate(contactId?: number) {
 
 const UNREACHABLE =
   "Could not reach the Contacts API. Check that the backend is running.";
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+
+async function photoDataUrl(formData: FormData): Promise<string | null> {
+  const value = formData.get("photo");
+  if (!(value instanceof File) || value.size === 0) return null;
+  if (!PHOTO_TYPES.has(value.type)) {
+    throw new Error("The photo must be an image file.");
+  }
+  if (value.size > MAX_PHOTO_BYTES) {
+    throw new Error("The photo must be 5 MB or smaller.");
+  }
+  const bytes = Buffer.from(await value.arrayBuffer());
+  return `data:${value.type};base64,${bytes.toString("base64")}`;
+}
 
 /**
  * Create (when `contactId` is null) or fully replace a contact.
@@ -39,6 +54,17 @@ export async function saveContactAction(
   formData: FormData,
 ): Promise<FormState> {
   const values = formDataToValues(formData);
+  values.photo_url = String(formData.get("photo_url") ?? "");
+  try {
+    const uploadedPhoto = await photoDataUrl(formData);
+    if (uploadedPhoto) values.photo_url = uploadedPhoto;
+  } catch (error) {
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "The photo could not be read.",
+      values,
+    };
+  }
 
   const parsed = contactInputSchema.safeParse(values);
   if (!parsed.success) {
