@@ -52,7 +52,18 @@ export const contactInputSchema = z.object({
     .transform((value) => value || null)
     .nullable()
     .default(null),
-  photo_url: optionalText(7_000_000, "Photo"),
+  photo_url: z.preprocess(
+    (value) => (value === "" ? null : value),
+    z
+      .string()
+      .regex(
+        /^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/,
+        "Photo must be a valid image data URL",
+      )
+      .max(1_400_000, "Photo must be 1 MB or smaller")
+      .nullable()
+      .default(null),
+  ),
 }) satisfies z.ZodType<ContactInput, unknown>;
 
 export type ContactFormValues = z.input<typeof contactInputSchema>;

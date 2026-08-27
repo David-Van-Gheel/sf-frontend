@@ -26,8 +26,21 @@ function invalidate(contactId?: number) {
 
 const UNREACHABLE =
   "Could not reach the Contacts API. Check that the backend is running.";
-const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const MAX_PHOTO_BYTES = 1 * 1024 * 1024;
 const PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+
+function hasImageSignature(type: string, bytes: Buffer): boolean {
+  return (
+    (type === "image/jpeg" && bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]))) ||
+    (type === "image/png" && bytes.subarray(0, 8).equals(Buffer.from("\x89PNG\r\n\x1a\n"))) ||
+    (type === "image/gif" &&
+      (bytes.subarray(0, 6).equals(Buffer.from("GIF87a")) ||
+        bytes.subarray(0, 6).equals(Buffer.from("GIF89a")))) ||
+    (type === "image/webp" &&
+      bytes.subarray(0, 4).equals(Buffer.from("RIFF")) &&
+      bytes.subarray(8, 12).equals(Buffer.from("WEBP")))
+  );
+}
 
 async function photoDataUrl(formData: FormData): Promise<string | null> {
   const value = formData.get("photo");
@@ -36,9 +49,12 @@ async function photoDataUrl(formData: FormData): Promise<string | null> {
     throw new Error("The photo must be an image file.");
   }
   if (value.size > MAX_PHOTO_BYTES) {
-    throw new Error("The photo must be 5 MB or smaller.");
+    throw new Error("The photo must be 1 MB or smaller.");
   }
   const bytes = Buffer.from(await value.arrayBuffer());
+  if (!hasImageSignature(value.type, bytes)) {
+    throw new Error("The photo content does not match its image type.");
+  }
   return `data:${value.type};base64,${bytes.toString("base64")}`;
 }
 

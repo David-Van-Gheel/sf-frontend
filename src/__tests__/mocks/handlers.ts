@@ -78,6 +78,13 @@ export const handlers = [
         );
   }),
 
+  http.get(api("/api/v1/contacts/:id/photo"), ({ params }) => {
+    const contact = CONTACTS.find((c) => c.id === Number(params.id));
+    return contact
+      ? HttpResponse.json({ photo_url: contact.photo_url })
+      : HttpResponse.json({ detail: "Not found" }, { status: 404 });
+  }),
+
   http.post(api("/api/v1/contacts"), async ({ request }) => {
     const body = (await request.json()) as Partial<Contact>;
     return HttpResponse.json(makeContact({ ...body, id: 99 }), { status: 201 });
