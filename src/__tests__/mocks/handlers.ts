@@ -25,6 +25,7 @@ export function makeContact(overrides: Partial<Contact> = {}): Contact {
     postal_code: null,
     country: "USA",
     notes: null,
+    photo_url: null,
     created_at: "2026-08-19T17:04:53.743932Z",
     updated_at: "2026-08-19T17:04:53.743936Z",
     full_name: `${first_name} ${last_name}`,
@@ -75,6 +76,13 @@ export const handlers = [
           { detail: `Contact ${params.id} not found` },
           { status: 404 },
         );
+  }),
+
+  http.get(api("/api/v1/contacts/:id/photo"), ({ params }) => {
+    const contact = CONTACTS.find((c) => c.id === Number(params.id));
+    return contact
+      ? HttpResponse.json({ photo_url: contact.photo_url })
+      : HttpResponse.json({ detail: "Not found" }, { status: 404 });
   }),
 
   http.post(api("/api/v1/contacts"), async ({ request }) => {

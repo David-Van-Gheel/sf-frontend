@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { AlertCircle, Loader2 } from "lucide-react";
@@ -48,7 +48,22 @@ export default function ContactForm({
   submitLabel: string;
   cancelHref: string;
 }) {
-  const [state, formAction] = useActionState(action, EMPTY_FORM_STATE);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(
+    contact?.photo_url ?? null,
+  );
+  const [hasReplacementFile, setHasReplacementFile] = useState(false);
+  const [state, formAction] = useActionState(async (previousState: FormState, formData: FormData) => {
+    const nextState = await action(previousState, formData);
+    if (nextState.status === "error" && nextState.values?.photo_url) {
+      setHasReplacementFile(false);
+    }
+    return nextState;
+  }, EMPTY_FORM_STATE);
+
+  const displayedPhoto =
+    hasReplacementFile || state.status !== "error"
+      ? photoPreview
+      : (state.values?.photo_url ?? photoPreview);
 
   function valueFor(name: keyof ContactInput): string {
     return state.values?.[name] ?? contact?.[name] ?? "";
@@ -56,6 +71,16 @@ export default function ContactForm({
 
   return (
     <form action={formAction} noValidate className="space-y-8">
+      <input
+        type="hidden"
+        name="photo_url"
+        value={
+          hasReplacementFile
+            ? ""
+            : (state.values?.photo_url ?? contact?.photo_url ?? "")
+        }
+        readOnly
+      />
       {state.status === "error" && state.message ? (
         <div
           role="alert"
@@ -92,6 +117,53 @@ export default function ContactForm({
                 error={state.fieldErrors?.[field.name]}
               />
             ))}
+
+            {group.title === "Identity" ? (
+              <div>
+                <label
+                  htmlFor="contact-photo"
+                  className="mb-1.5 block text-[13px] font-medium text-foreground"
+                >
+                  Contact photo{" "}
+                  <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
+                    optional
+                  </span>
+                </label>
+                <input
+                  id="contact-photo"
+                  name="photo"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) {
+                      setPhotoPreview(contact?.photo_url ?? null);
+                      setHasReplacementFile(false);
+                      return;
+                    }
+                    setHasReplacementFile(true);
+                    const reader = new FileReader();
+                    reader.addEventListener("load", () => {
+                      if (typeof reader.result === "string") {
+                        setPhotoPreview(reader.result);
+                      }
+                    });
+                    reader.readAsDataURL(file);
+                  }}
+                  className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-secondary file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground"
+                />
+                {displayedPhoto ? (
+                  <img
+                    src={displayedPhoto}
+                    alt="Selected contact"
+                    className="mt-3 aspect-square h-20 w-20 rounded-full object-cover"
+                  />
+                ) : null}
+                <p className="mt-1.5 text-[12px] text-muted-foreground">
+                  JPEG, PNG, WebP, or GIF up to 1 MB.
+                </p>
+              </div>
+            ) : null}
           </div>
         </fieldset>
       ))}

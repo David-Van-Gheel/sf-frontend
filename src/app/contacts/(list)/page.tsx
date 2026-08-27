@@ -9,7 +9,7 @@ import EmptyState from "@/components/contacts/EmptyState";
 import Pagination from "@/components/contacts/Pagination";
 import { buttonClasses } from "@/components/ui/Button";
 import { ApiUnreachableError, apiBaseUrl } from "@/lib/apiClient";
-import { getHealth, listContacts } from "@/lib/contacts/api";
+import { getContactPhoto, getHealth, listContacts } from "@/lib/contacts/api";
 import {
   contactsHref,
   parseContactListQuery,
@@ -77,7 +77,15 @@ export default async function ContactsPage({
 
           {result && result.items.length > 0 ? (
             <>
-              <ContactsTable contacts={result.items} query={query} />
+              <ContactsTable
+                contacts={await Promise.all(
+                  result.items.map(async (contact) => ({
+                    ...contact,
+                    photo_url: await getContactPhoto(contact.id),
+                  })),
+                )}
+                query={query}
+              />
               <Pagination
                 query={query}
                 total={result.total}

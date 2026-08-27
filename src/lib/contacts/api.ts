@@ -54,6 +54,14 @@ export async function getContact(id: number): Promise<Contact | null> {
   }
 }
 
+export async function getContactPhoto(id: number): Promise<string | null> {
+  const result = await apiJson<{ photo_url: string | null }>(
+    `${CONTACTS_PATH}/${id}/photo`,
+    { cache: "no-store" },
+  );
+  return result.photo_url;
+}
+
 export async function createContact(input: ContactInput): Promise<Contact> {
   return apiJson<Contact>(CONTACTS_PATH, {
     method: "POST",
