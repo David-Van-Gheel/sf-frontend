@@ -186,7 +186,6 @@ export default function ContactForm({
                     )}
                     <button
                       type="button"
-                      disabled={addresses.length >= 19}
                       onClick={() =>
                         setAddresses((current) =>
                           current.filter((_, addressIndex) => addressIndex !== index),
@@ -200,6 +199,7 @@ export default function ContactForm({
                 ))}
                 <button
                   type="button"
+                  disabled={addresses.length >= 19}
                   onClick={() =>
                     setAddresses((current) => [
                       ...current,
