@@ -102,7 +102,18 @@ export default async function ContactDetailPage({ params }: PageProps) {
         </Row>
         <Row label="Company">{contact.company}</Row>
         <Row label="Job title">{contact.job_title}</Row>
-        <Row label="Address">{address}</Row>
+        <Row label="Addresses">
+          {contact.addresses?.length
+            ? contact.addresses.map((item) => (
+                <div key={item.id ?? item.type}>
+                  <strong>{item.type}:</strong>{" "}
+                  {[item.address, item.city, item.state, item.postal_code, item.country]
+                    .filter(Boolean)
+                    .join(", ")}
+                </div>
+              ))
+            : address}
+        </Row>
         <Row label="Notes">
           {contact.notes ? (
             <span className="whitespace-pre-wrap">{contact.notes}</span>

@@ -22,6 +22,18 @@ export interface Contact {
   created_at: string;
   updated_at: string;
   full_name: string;
+  addresses?: Address[];
+}
+
+export type AddressType = "Home" | "Work" | "Other";
+export interface Address {
+  id?: number;
+  type: AddressType;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  country: string | null;
 }
 
 /** Every editable field, i.e. `ContactCreate` / `ContactReplace`. */
