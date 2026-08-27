@@ -70,6 +70,25 @@ export async function saveContactAction(
   formData: FormData,
 ): Promise<FormState> {
   const values = formDataToValues(formData);
+  values.addresses = String(formData.get("addresses") ?? "[]");
+  try {
+    const extraAddresses = JSON.parse(values.addresses);
+    const original = {
+      type: String(formData.get("address_type") || "Other"),
+      address: values.address || null,
+      city: values.city || null,
+      state: values.state || null,
+      postal_code: values.postal_code || null,
+      country: values.country || null,
+    };
+    values.addresses = JSON.stringify(
+      [original, ...extraAddresses].filter((item) =>
+        Object.values(item).some((value) => value && value !== "Other"),
+      ),
+    );
+  } catch {
+    values.addresses = "[]";
+  }
   values.photo_url = String(formData.get("photo_url") ?? "");
   try {
     const uploadedPhoto = await photoDataUrl(formData);

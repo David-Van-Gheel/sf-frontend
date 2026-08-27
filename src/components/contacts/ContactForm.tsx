@@ -12,6 +12,7 @@ import {
   type Contact,
   type ContactInput,
   type FormState,
+  type Address,
 } from "@/lib/contacts/types";
 
 export type ContactFormAction = (
@@ -52,6 +53,9 @@ export default function ContactForm({
     contact?.photo_url ?? null,
   );
   const [hasReplacementFile, setHasReplacementFile] = useState(false);
+  const [addresses, setAddresses] = useState<Address[]>(
+    contact?.addresses?.slice(1) ?? [],
+  );
   const [state, formAction] = useActionState(async (previousState: FormState, formData: FormData) => {
     const nextState = await action(previousState, formData);
     if (nextState.status === "error" && nextState.values?.photo_url) {
@@ -66,7 +70,8 @@ export default function ContactForm({
       : (state.values?.photo_url ?? photoPreview);
 
   function valueFor(name: keyof ContactInput): string {
-    return state.values?.[name] ?? contact?.[name] ?? "";
+    const value = state.values?.[name] ?? contact?.[name];
+    return typeof value === "string" ? value : "";
   }
 
   return (
@@ -81,6 +86,7 @@ export default function ContactForm({
         }
         readOnly
       />
+      <input type="hidden" name="addresses" value={JSON.stringify(addresses)} readOnly />
       {state.status === "error" && state.message ? (
         <div
           role="alert"
@@ -117,6 +123,101 @@ export default function ContactForm({
                 error={state.fieldErrors?.[field.name]}
               />
             ))}
+
+
+            {group.title === "Address" ? (
+              <>
+                <label className="text-[13px] font-medium text-foreground">
+                  Address type
+                  <select
+                    name="address_type"
+                    defaultValue={contact?.addresses?.[0]?.type ?? "Other"}
+                    className="mt-1.5 w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground"
+                  >
+                    <option>Home</option>
+                    <option>Work</option>
+                    <option>Other</option>
+                  </select>
+                </label>
+                {addresses.map((item, index) => (
+                  <div
+                    key={`${item.id ?? "new"}-${index}`}
+                    className="sm:col-span-2 grid gap-3 rounded-md border border-border p-3 sm:grid-cols-2"
+                  >
+                    <label className="text-[13px] font-medium text-foreground">
+                      Address type
+                      <select
+                        value={item.type}
+                        onChange={(event) =>
+                          setAddresses((current) =>
+                            current.map((address, addressIndex) =>
+                              addressIndex === index
+                                ? { ...address, type: event.target.value as Address["type"] }
+                                : address,
+                            ),
+                          )
+                        }
+                        className="mt-1.5 w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground"
+                      >
+                        <option>Home</option>
+                        <option>Work</option>
+                        <option>Other</option>
+                      </select>
+                    </label>
+                    {(["address", "city", "state", "postal_code", "country"] as const).map(
+                      (field) => (
+                        <label key={field} className="text-[13px] font-medium text-foreground">
+                          {field.replace("_", " ")}
+                          <input
+                            value={item[field] ?? ""}
+                            onChange={(event) =>
+                              setAddresses((current) =>
+                                current.map((address, addressIndex) =>
+                                  addressIndex === index
+                                    ? { ...address, [field]: event.target.value || null }
+                                    : address,
+                                ),
+                              )
+                            }
+                            className="mt-1.5 w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-foreground"
+                          />
+                        </label>
+                      ),
+                    )}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAddresses((current) =>
+                          current.filter((_, addressIndex) => addressIndex !== index),
+                        )
+                      }
+                      className="text-left text-sm text-destructive"
+                    >
+                      Remove address
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setAddresses((current) => [
+                      ...current,
+                      {
+                        type: "Other",
+                        address: null,
+                        city: null,
+                        state: null,
+                        postal_code: null,
+                        country: null,
+                      },
+                    ])
+                  }
+                  className="text-left text-sm font-medium text-primary"
+                >
+                  Add address
+                </button>
+              </>
+            ) : null}
 
             {group.title === "Identity" ? (
               <div>

@@ -64,6 +64,19 @@ export const contactInputSchema = z.object({
       .nullable()
       .default(null),
   ),
+  addresses: z.preprocess(
+    (value) => {
+      try { return JSON.parse(String(value ?? "[]")); } catch { return []; }
+    },
+    z.array(z.object({
+      type: z.enum(["Home", "Work", "Other"]),
+      address: z.string().nullable(),
+      city: z.string().nullable(),
+      state: z.string().nullable(),
+      postal_code: z.string().nullable(),
+      country: z.string().nullable(),
+    })).max(20).default([]),
+  ),
 }) satisfies z.ZodType<ContactInput, unknown>;
 
 export type ContactFormValues = z.input<typeof contactInputSchema>;
@@ -166,7 +179,7 @@ export const CONTACT_FIELD_GROUPS: ContactFieldGroup[] = [
   },
   {
     title: "Address",
-    description: "Optional postal details.",
+    description: "Legacy address fields are retained for existing contacts.",
     fields: [
       {
         name: "address",
